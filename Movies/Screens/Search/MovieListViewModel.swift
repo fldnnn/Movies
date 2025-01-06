@@ -6,11 +6,12 @@
 //
 
 import Foundation
+import Combine
 
 final class MovieListViewModel {
     // Output
-    var movies: [Movie] = []
-    var filteredMovies: [Movie] = [] // for search filter
+    @Published var movies: [Movie] = []
+    @Published var filteredMovies: [Movie] = [] // for search filter
     private var favoriteIds: Set<Int> = []
     
     // Pagination
@@ -24,6 +25,8 @@ final class MovieListViewModel {
     // A callback property to notify the ViewController when data changes
     var onDataUpdated: (() -> Void)?
     
+    private var subscriptions = Set<AnyCancellable>()
+    
     init() {
         let ids = FavoritesManager.shared.fetchAllFavoriteMovieIds()
         favoriteIds = Set(ids)
@@ -36,29 +39,37 @@ final class MovieListViewModel {
     }
     
     func fetchMovies(page: Int) {
-        guard !isLoading else { return }
-        isLoading = true
-        
-        service.fetchPopularMovies(page: page) { [weak self] result in
-            guard let self = self else { return }
-            self.isLoading = false
+            guard !isLoading else { return }
+            guard page <= totalPages else { return }
+            isLoading = true
             
-            switch result {
-            case .success(let movieResults):
-                if let page = movieResults.page, let totalPages = movieResults.totalPages, let results = movieResults.results {
-                    self.currentPage = page
-                    self.totalPages = totalPages
-                    self.movies.append(contentsOf: results)
-                    self.filteredMovies = self.movies
-                    DispatchQueue.main.async {
-                        self.onDataUpdated?()
+            service.fetchPopularMovies(page: page)
+                .receive(on: DispatchQueue.main)
+                .sink(
+                    receiveCompletion: { [weak self] completion in
+                        guard let self = self else { return }
+                        self.isLoading = false
+                        
+                        switch completion {
+                        case .failure(let error):
+                            print("Error fetching movies: \(error)")
+                        case .finished:
+                            break
+                        }
+                    },
+                    receiveValue: { [weak self] movieResults in
+                        guard let self = self else { return }
+                        if let page = movieResults.page, let totalPages = movieResults.totalPages, let results = movieResults.results {
+                            self.currentPage = page
+                            self.totalPages = totalPages
+                            self.movies.append(contentsOf: results)
+                            self.filteredMovies = self.movies
+                        }
+                        
                     }
-                }
-            case .failure(let error):
-                print("Error fetching movies: \(error)")
-            }
+                )
+                .store(in: &subscriptions)
         }
-    }
     
     // If user toggles from the detail screen or list screen, update here:
     func updateFavoriteStatus(for movie: Movie, isFavorite: Bool) {

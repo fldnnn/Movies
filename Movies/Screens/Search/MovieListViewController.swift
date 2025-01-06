@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Combine
 
 class MovieListViewController: UIViewController {
     private let viewModel: MovieListViewModel
@@ -36,6 +37,8 @@ class MovieListViewController: UIViewController {
 
     // Layout mode
     private var isGrid = false
+    
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Init
     init(viewModel: MovieListViewModel) {
@@ -51,7 +54,7 @@ class MovieListViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupBindings()
+        bindViewModel()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -82,12 +85,15 @@ class MovieListViewController: UIViewController {
         ])
     }
 
-    private func setupBindings() {
-        viewModel.onDataUpdated = { [weak self] in
-            guard let self = self else { return }
-            self.collectionView.reloadData()
+    private func bindViewModel() {
+            viewModel.$filteredMovies
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in
+                    guard let self = self else { return }
+                    self.collectionView.reloadData()
+                }
+                .store(in: &cancellables)
         }
-    }
 
     // MARK: - Actions
     @objc private func toggleLayout() {
