@@ -1,0 +1,16 @@
+//
+//  BaseConfig.xcconfig
+//  Movies
+//
+//  Created by fulden onan on 5.01.2025.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+SLASH=/
+HTTPS_SCHEME = https:$(SLASH)/
+
+APP_NAME = Movies
+MOVIES_API_TOKEN = eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkZWVhNDkzZTBhZmIyNzJhZTQzNWMzMDAyNzkzMWM3MiIsIm5iZiI6MTY5NTI5NjYzNS43NzksInN1YiI6IjY1MGMyYzdiYjViYzIxMDE0ZTkwZTI3OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.vUQQe_nepj0HtDAgdRDZeiFELtVw1IsgPPiGnk9KqEo
+MOVIES_API_URL = $(HTTPS_SCHEME)api.themoviedb.org/3/movie/popular
